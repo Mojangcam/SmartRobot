@@ -35,7 +35,7 @@ int g_yellowPillarPositionY;
 int g_currentPositionX = 0;
 int g_currentPositionY = 0;
 
-// Robot Is Turned
+// Robot Is Turned 0 = Not, 1 = Right, 2 = Left
 int g_is_Turned = 0;
 
 // Robot direction to look front : 1 back : 0
@@ -98,6 +98,15 @@ int getLineSensorValue(int lineSensorPinNum);
 void showLineSensorStatus();
 void getNearbyBlock(int blockID = 0);
 void allBlockScan();
+void resetPosition();
+
+// Get Block Position
+void getPositionXToBlockID(int BlockID);
+void getPositionYToBlockID(int BlockID);
+
+// Get Pillar Position
+void getPositionXToPillarID(int BlockID);
+void getPositionYToPillarID(int BlockID);
 
 // NEW kj
 int g_beforePillarX;
@@ -122,9 +131,9 @@ int before_color = 0;
 int Y_Color = 0;
 int alt_color = 0;
 
-void pickup_block(int delay_time = 0) {
+void pickup_block(int setDelayTime = 0) {
   prizm.setMotorPower(2, -15);
-  delay(delay_time);
+  delay(setDelayTime);
   prizm.setMotorPower(2, 0);
 }
 // END kj
@@ -151,15 +160,17 @@ void loop()
 {
   //  가장 가까운 값 찾는 것
   for (int i = 2; i < 6; i++){
-    if (red_y == i || green_y == i || blue_y == i){
+    if (g_redBlockPositionY == i ||
+        g_greenBlockPositionY == i ||
+        g_blueBlockPositionY == i){
       go_position_y = i;
-      if (red_y == i){
+      if (g_redBlockPositionY == i){
         color = 1;
       } // 가장 가까운 값이 빨간색이면 
-      else if (green_y == i){
+      else if (g_greenBlockPositionY == i){
         color = 2;
       }
-      else if (blue_y == i){
+      else if (g_blueBlockPositionY == i){
         color = 3;
       }
       if (color != 0){
@@ -168,35 +179,42 @@ void loop()
     }
   }
   if (color == 1){
-    if (red_y == cyl_gy && red_x == cyl_gx){
+    if (g_redBlockPositionY == g_greenPillarPositionY &&
+        g_redBlockPositionX == g_greenPillarPositionX){
       color1 = 2;
     }
-    else if (red_y == cyl_by && red_x == cyl_bx){
+    else if (g_redBlockPositionY == g_bluePillarPositionY &&
+            g_redBlockPositionX == g_bluePillarPositionX){
       color1 = 3;
     }
   }
   else if (color == 2){
-    if (green_y == cyl_ry && green_x == cyl_rx){
+    if (g_greenBlockPositionY == g_redPillarPositionY &&
+        g_greenBlockPositionX == g_redPillarPositionX){
       color1 = 1;
     }
-    else if (green_y == cyl_by && green_x == cyl_bx){
+    else if (g_greenBlockPositionY == g_bluePillarPositionY &&
+            g_greenBlockPositionX == g_bluePillarPositionX){
       color1 = 3;
     }
   }
   else if (color == 3){
-    if (blue_y == cyl_ry && blue_x == cyl_rx){
+    if (g_blueBlockPositionY == g_redPillarPositionY &&
+        g_blueBlockPositionX == g_redPillarPositionX){
       color1 = 1;
     }
-    else if (blue_y == cyl_gy && blue_x == cyl_gx){
+    else if (g_blueBlockPositionY == g_greenPillarPositionY &&
+            g_blueBlockPositionX == g_greenPillarPositionX){
       color1 = 2;
     }
   }
   Serial.print(color1);
-  goto_color_block(color); // 레드로 가
+  gotoColorBlock(color); // 레드로 가
   Servo_Grap();            // 찝어
-  if (find_y_b(color1) == cyl_yy && cyl_yy == g_currentPositionY){
+  if (find_y_b(color1) == g_yellowPillarPositionY &&
+      g_yellowPillarPositionY == g_currentPositionY){
     if (Y == 0){
-      Turn_Right(0, 180);
+      turnRight(0, 180);
       Servo_Put();
       Y_Color = color;
       Y = 1;
@@ -204,130 +222,112 @@ void loop()
   }
   else
   {
-    reset_position();
+    resetPosition();
     if (Y == 0){
-      goto_color_cyl(4);
+      gotoColorPillar(4);
       Servo_Put();
       Y_Color = color;
       Y = 1;
-      reset_position();
+      resetPosition();
     }
   }
-  goto_color_block(color1); // color1 = blue color = red Y_color = red
+  gotoColorBlock(color1); // color1 = blue color = red Y_color = red
   Servo_Grap();
-  reset_position();
-  Serial.print("First_down Color : ");
-  Serial.println(color1);
-  Serial.println(down);
-  goto_color_block(Y_Color);
+  resetPosition();
+  gotoColorBlock(Y_Color);
   Servo_Put();
-  reset_position();
-  Serial.print("First_down Color : ");
-  Serial.println(color);
-  Serial.println(down);
-  goto_color_cyl(Y_Color);
+  resetPosition();
+  gotoColorPillar(Y_Color);
   Servo_Grap();
-  reset_position();
-  Serial.print("First_down Color : ");
-  Serial.println(color);
-  Serial.println(down);
-  goto_color_block(color1);
+  resetPosition();
+  gotoColorBlock(color1);
   Servo_Put();
-  reset_position();
-  Serial.print("First_down Color : ");
-  Serial.println(color1);
-  Serial.println(down);
-  goto_color_cyl(4);
+  resetPosition();
+  gotoColorPillar(4);
   Servo_Grap();
-  reset_position();
-  Serial.print("First_down Color : ");
-  Serial.println("Yellow");
-  Serial.println(down);
-  goto_color_cyl(color);
+  resetPosition();
+  gotoColorPillar(color);
   Servo_Put();
-  reset_position();
-  Serial.print("First_down Color : ");
-  Serial.println(color);
-  Serial.println(down);
+  resetPosition();
   Move_y(1);
   forwardMove(4000);
   Right_Move(2000);
   Stop_Move();
 }
 
-int find_x_b(int color)
+int getPositionXToBlockID(int color)
 {
   if (color == 1)
   {
-    return red_x;
+    return g_redBlockPositionX;
   }
   else if (color == 2)
   {
-    return green_x;
+    return g_greenBlockPositionX;
   }
   else if (color == 3)
   {
-    return blue_x;
+    return g_blueBlockPositionX;
   }
 }
 
-int find_y_b(int color)
+int getPositionYToBlockID(int color)
 {
   if (color == 1)
   {
-    return red_y;
+    return g_redBlockPositionY;
   }
   else if (color == 2)
   {
-    return green_y;
+    return g_greenBlockPositionY;
   }
   else if (color == 3)
   {
-    return blue_y;
+    return g_blueBlockPositionY;
   }
 }
 
-int find_x_c(int color)
+int getPositionXToPillarID(int color)
 {
   if (color == 1)
   {
-    return cyl_rx;
+    return g_redPillarPositionX;
   }
   else if (color == 2)
   {
-    return cyl_gx;
+    return g_greenPillarPositionX;
   }
   else if (color == 3)
   {
-    return cyl_bx;
+    return g_bluePillarPositionX;
   }
   else if (color == 4)
   {
-    return cyl_yx;
+    return g_yellowPillarPositionX;
   }
 }
 
-int find_y_c(int color)
+int getPositionYToPillarID(int color)
 {
   if (color == 1)
   {
-    return cyl_ry;
+    return g_redPillarPositionY;
   }
   else if (color == 2)
   {
-    return cyl_gy;
+    return g_greenPillarPositionY;
   }
   else if (color == 3)
   {
-    return cyl_by;
+    return g_bluePillarPositionY;
   }
   else if (color == 4)
   {
-    return cyl_yy;
+    return g_yellowPillarPositionY;
   }
 }
 
-void reset_position()
+void resetPosition()
 {
   if (g_is_Turned == 1)
   {
@@ -373,32 +373,32 @@ void moveX(int x)
   {
     if (x == 0)
     {
-      if (down == 0)
+      if (g_directionToLook == 0)
       {
-        Turn_Left(0, 90);
+        turnLeft(0, 90);
         g_is_Turned = 1;
       }
-      if (down == 1)
+      if (g_directionToLook == 1)
       {
-        Turn_Right(0, 90);
+        turnRight(0, 90);
         g_is_Turned = 2;
       }
-      c_current_x = 0;
+      g_currentPositionX = 0;
     }
     else if (x == 2)
     {
-      if (down == 1)
+      if (g_directionToLook == 1)
       {
-        Turn_Left(0, 90);
+        turnLeft(0, 90);
         g_is_Turned = 1;
       }
-      if (down == 0)
+      if (g_directionToLook == 0)
       {
-        Turn_Right(0, 90);
+        turnRight(0, 90);
         g_is_Turned = 2;
       }
     }
-    c_current_x = 2;
+    g_currentPositionX = 2;
   }
 }
 
@@ -409,16 +409,16 @@ void gotoColorBlock(int colorID = 0)
     switch (colorID)
     {
     case 1:
-      Move_y(red_y);
-      Move_x(red_x); // 바라보기 까지만 함
+      Move_y(g_redBlockPositionY);
+      Move_x(g_redBlockPositionX); // 바라보기 까지만 함
       break;
     case 2:
-      Move_y(green_y);
-      Move_x(green_x);
+      Move_y(g_greenBlockPositionY);
+      Move_x(g_greenBlockPositionX);
       break;
     case 3:
-      Move_y(blue_y);
-      Move_x(blue_x);
+      Move_y(g_blueBlockPositionY);
+      Move_x(g_blueBlockPositionX);
       break;
     }
   }
@@ -431,21 +431,21 @@ void gotoColorPillar(int colorID = 0)
     switch (colorID)
     {
     case 1:
-      Move_y(cyl_ry);
-      Move_x(cyl_rx); // 바라보기 까지만 함
+      Move_y(g_redPillarPositionY);
+      Move_x(g_redPillarPositionX); // 바라보기 까지만 함
       break;
     case 2:
-      Move_y(cyl_gy);
-      Move_x(cyl_gx);
+      Move_y(g_greenPillarPositionY);
+      Move_x(g_greenPillarPositionX);
       break;
     case 3:
-      Move_y(cyl_by);
-      Move_x(cyl_bx);
+      Move_y(g_bluePillarPositionY);
+      Move_x(g_bluePillarPositionX);
       break;
 
     case 4:
-      Move_y(cyl_yy);
-      Move_x(cyl_yx);
+      Move_y(g_yellowPillarPositionY);
+      Move_x(g_yellowPillarPositionX);
       break;
     }
   }
@@ -465,7 +465,7 @@ void allBlockScan()
     {
       break;
     }
-    getcol(c_current_x, g_currentPositionY);
+    getcol(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 3");
   Move_y(3);
@@ -478,7 +478,7 @@ void allBlockScan()
     {
       break;
     }
-    colorRecognition(c_current_x, g_currentPositionY);
+    colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 4");
   Move_y(4);
@@ -491,7 +491,7 @@ void allBlockScan()
     {
       break;
     }
-    colorRecognition(c_current_x, g_currentPositionY);
+    colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 5");
   Move_y(5);
@@ -504,12 +504,12 @@ void allBlockScan()
     {
       break;
     }
-    colorRecognition(c_current_x, g_currentPositionY);
+    colorRecognition(g_currentPositionX, g_currentPositionY);
   }
-  Turn_Right(0, 180);
+  turnRight(0, 180);
   forwardMove();
-  down = 1;
-  c_current_x = 2;
+  g_directionToLook = 1;
+  g_currentPositionX = 2;
   scan_start = millis();
   while (1)
   {
@@ -518,7 +518,7 @@ void allBlockScan()
     {
       break;
     }
-    colorRecognition(c_current_x, g_currentPositionY);
+    colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 4");
   Move_y(4);
@@ -531,7 +531,7 @@ void allBlockScan()
     {
       break;
     }
-    colorRecognition(c_current_x, g_currentPositionY);
+    colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 3");
   Move_y(3);
@@ -544,7 +544,7 @@ void allBlockScan()
     {
       break;
     }
-    colorRecognition(c_current_x, g_currentPositionY);
+    colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 2");
   Move_y(2);
@@ -557,15 +557,16 @@ void allBlockScan()
     {
       break;
     }
-    colorRecognition(c_current_x, g_currentPositionY);
+    colorRecognition(g_currentPositionX, g_currentPositionY);
   }
-  Serial.println(String() + F("red block : ") + red_x + F(", ") + red_y);
-  Serial.println(String() + F("red cyl : ") + cyl_rx + F(", ") + cyl_ry);
-  Serial.println(String() + F("green block : ") + green_x + F(", ") + green_y);
-  Serial.println(String() + F("green cyl : ") + cyl_gx + F(", ") + cyl_gy);
-  Serial.println(String() + F("blue block : ") + blue_x + F(", ") + blue_y);
-  Serial.println(String() + F("blue cyl : ") + cyl_bx + F(", ") + cyl_by);
-  Serial.println(String() + F("Yellow cyl : ") + cyl_yx + F(", ") + cyl_yy);
+
+  Serial.println(String() + F("red block : ") + g_redBlockPositionX + F(", ") + g_redBlockPositionY);
+  Serial.println(String() + F("red cyl : ") + g_redPillarPositionX + F(", ") + g_redPillarPositionY);
+  Serial.println(String() + F("green block : ") + g_greenBlockPositionX + F(", ") + g_greenBlockPositionY);
+  Serial.println(String() + F("green cyl : ") + g_greenPillarPositionX + F(", ") + g_greenPillarPositionY);
+  Serial.println(String() + F("blue block : ") + g_blueBlockPositionX + F(", ") + g_blueBlockPositionY);
+  Serial.println(String() + F("blue cyl : ") + g_bluePillarPositionX + F(", ") + g_bluePillarPositionY);
+  Serial.println(String() + F("Yellow cyl : ") + g_yellowPillarPositionX + F(", ") + g_yellowPillarPositionY);
 }
 
 void rightMove(int delay_time = 0,
@@ -583,24 +584,28 @@ void rightMove(int delay_time = 0,
   }
 }
 
-void Back_Move(int delay_time = 0, int L_T = SPEED, int R_T = SPEED, int L_B = SPEED, int R_B = SPEED)
-{
-  exc.setMotorSpeeds(1, -R_T, -R_B);
-  exc.setMotorSpeeds(2, L_B, L_T);
-  if (delay_time != 0)
-  {
+void Back_Move(int delay_time = 0,
+                int leftTopMotorSpeed = DEFAULT_MOTOR_SPEED,
+                int rightTopMotorSpeed = DEFAULT_MOTOR_SPEED,
+                int leftBottomMotorSpeed = DEFAULT_MOTOR_SPEED,
+                int RightBottomMotorSpeed = DEFAULT_MOTOR_SPEED) {
+  exc.setMotorSpeeds(1, -rightTopMotorSpeed, -RightBottomMotorSpeed);
+  exc.setMotorSpeeds(2, RightBottomMotorSpeed, leftTopMotorSpeed);
+  if (delay_time != 0) {
     delay(delay_time);
     exc.setMotorSpeeds(1, 0, 0);
     exc.setMotorSpeeds(2, 0, 0);
   }
 }
 
-void Left_Move(int delay_time = 0, int L_T = SPEED, int R_T = SPEED, int L_B = SPEED, int R_B = SPEED)
-{
-  exc.setMotorSpeeds(1, R_T, -R_B);
-  exc.setMotorSpeeds(2, -L_B, L_T);
-  if (delay_time != 0)
-  {
+void Left_Move(int delay_time = 0,
+                int leftTopMotorSpeed = DEFAULT_MOTOR_SPEED,
+                int rightTopMotorSpeed = DEFAULT_MOTOR_SPEED,
+                int leftBottomMotorSpeed = DEFAULT_MOTOR_SPEED,
+                int RightBottomMotorSpeed = DEFAULT_MOTOR_SPEED) {
+  exc.setMotorSpeeds(1, rightTopMotorSpeed, -RightBottomMotorSpeed);
+  exc.setMotorSpeeds(2, -RightBottomMotorSpeed, leftTopMotorSpeed);
+  if (delay_time != 0) {
     delay(delay_time);
     exc.setMotorSpeeds(1, 0, 0);
     exc.setMotorSpeeds(2, 0, 0);
@@ -628,82 +633,84 @@ void stopMove()
   exc.setMotorSpeeds(2, 0, 0);
 }
 
-void Move_y(int set_y)
-{
-  Serial.println(set_y);
+void moveY(int setPositionY) {
+  Serial.println(setPositionY);
   Serial.println(g_currentPositionY);
-  if (set_y != 0)
+  if (setPositionY != 0)
   {
-    if (set_y > 5)
-      set_y = 5;
-    if (set_y == 0)
-      set_y = 1;
-    while (g_currentPositionY != set_y)
-    {
-      if (set_y > g_currentPositionY)
-      {
-        if (down == 1)
-        {
-          down = 0;
-          Turn_Left(0, 180);
+    if (setPositionY > 5)
+      setPositionY = 5;
+    if (setPositionY == 0)
+      setPositionY = 1;
+    while (g_currentPositionY != setPositionY) {
+      if (setPositionY > g_currentPositionY) {
+        if (g_directionToLook == 1) {
+          g_directionToLook = 0;
+          turnLeft(0, 180);
           unsigned long start_time, end_time;
           start_time = millis();
-          while (1)
-          {
+          while (1) {
             forwardMove();
             end_time = millis();
-            if (end_time - start_time > 500)
-            {
+            if (end_time - start_time > 500) {
               Stop_Move();
               break;
             }
-            else if (getLineSensorValue(Center_Left) == 1)
-            {
+            else if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1) {
               break;
             }
           }
         }
-        if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 1)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+            getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1) {
           forwardMove();
         }
-        else
-        {
-          if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 0)
-          {
-            forwardMove(0, SPEED, SPEED + ((SPEED * 2) / 10), SPEED, SPEED + ((SPEED * 2) / 10));
+        else {
+          if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+              getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 0) {
+            forwardMove(0,
+                        DEFAULT_MOTOR_SPEED,
+                        DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                        DEFAULT_MOTOR_SPEED,
+                        DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10));
           }
-          else if (getLineSensorValue(Front_Left) == 0 && getLineSensorValue(Front_Right) == 1)
-          {
-            forwardMove(0, SPEED + ((SPEED * 2) / 10), SPEED, SPEED + ((SPEED * 2) / 10), SPEED);
+          else if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+                  getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1) {
+            forwardMove(0,
+                        DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                        DEFAULT_MOTOR_SPEED,
+                        DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                        DEFAULT_MOTOR_SPEED);
           }
         }
-        if (getLineSensorValue(Center_Left) == 1 && rec == 0 && down == 0)
-        {
+        if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1 &&
+                              rec == 0 &&
+                              g_directionToLook == 0) {
           Serial.println("센서감지123145564566");
           g_currentPositionY += 1;
           Serial.print("현재 좌표 :\tX : ");
-          Serial.print(c_current_x);
+          Serial.print(g_currentPositionX);
           Serial.print("\tY : ");
           Serial.println(g_currentPositionY);
           rec = 1;
-          if (g_currentPositionY == set_y)
-          {
+          if (g_currentPositionY == setPositionY) {
             Stop_Move();
             break;
           }
         }
-        else if (getLineSensorValue(Center_Left) == 0 && rec == 1 && down == 0)
+        else if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 0 &&
+                rec == 1 &&
+                g_directionToLook == 0)
         {
           rec = 0;
         }
       }
-      if (set_y < g_currentPositionY)
+      if (setPositionY < g_currentPositionY)
       {
-        if (down == 0)
+        if (g_directionToLook == 0)
         {
-          Turn_Right(0, 180);
-          down = 1;
+          turnRight(0, 180);
+          g_directionToLook = 1;
           unsigned long start_time, end_time;
           start_time = millis();
           while (1)
@@ -715,19 +722,21 @@ void Move_y(int set_y)
               Stop_Move();
               break;
             }
-            else if (getLineSensorValue(Center_Left) == 1)
+            else if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1)
             {
               break;
             }
           }
         }
-        if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 1)
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+            getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
         {
           forwardMove();
         }
         else
         {
-          if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 0)
+          if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+              getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 0)
           {
             forwardMove(0,
                         DEFAULT_MOTOR_SPEED,
@@ -735,7 +744,8 @@ void Move_y(int set_y)
                         DEFAULT_MOTOR_SPEED,
                         DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10));
           }
-          else if (getLineSensorValue(Front_Left) == 0 && getLineSensorValue(Front_Right) == 1)
+          else if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+                  getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
           {
             forwardMove(0,
                         DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
@@ -744,42 +754,29 @@ void Move_y(int set_y)
                         DEFAULT_MOTOR_SPEED);
           }
         }
-        if (getLineSensorValue(Center_Left) == 1 && rec == 0 && down == 1)
-        {
+        if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1 &&
+            rec == 0 &&
+            g_directionToLook == 1) {
           g_currentPositionY -= 1;
+
           Serial.print("현재 좌표 :\tX : 0");
           Serial.print("\tY : ");
           Serial.println(g_currentPositionY);
+
           rec = 1;
-          if (g_currentPositionY == set_y)
-          {
+          if (g_currentPositionY == setPositionY) {
             Stop_Move();
             break;
           }
         }
-        else if (getLineSensorValue(Center_Left) == 0 && rec == 1 && down == 1)
-        {
+        else if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 0 &&
+                rec == 1 &&
+                g_directionToLook == 1) {
           rec = 0;
         }
       }
     }
   }
-}
-
-void cho(int PIN_MODE)
-{
-  pinMode(PIN_MODE, OUTPUT);
-  digitalWrite(PIN_MODE, LOW);
-  delayMicroseconds(2);
-  digitalWrite(PIN_MODE, HIGH);
-  delayMicroseconds(5);
-  digitalWrite(PIN_MODE, LOW);
-
-  pinMode(3, INPUT);
-  double duration = pulseIn(3, HIGH);
-  double cm = duration * 340 / 10000 / 2;
-
-  Serial.println(cm);
 }
 
 void huskylensStarting()
@@ -919,7 +916,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
       Serial.println("3S Over");
       break;
     }
-    if (getLineSensorValue(Front_Left) == 1)
+    if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1)
     {
       Serial.println("인식 완료 ");
       Stop_Move();
@@ -937,11 +934,12 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
 
           break;
         }
-        if (getLineSensorValue(Center_Left) == 1)
+        if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1)
         {
           Serial.println("라인 감지");
           position_reset = 1;
-          if (getLineSensorValue(Center_Left) == 1 && getLineSensorValue(Front_Left) == 1)
+          if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1 &&
+              getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1)
           {
             position_reset = 1;
             Serial.println("포지션 설정 완료");
@@ -973,7 +971,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
         }
         if (length_e - length_s > 2000)
         {
-          if (getLineSensorValue(Center_Left) == 1)
+          if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1)
           {
             Serial.println("감지 완료");
             length_e = millis();
@@ -1007,7 +1005,8 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
       Stop_Move();
       break;
     }
-    if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 1)
+    if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+        getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
     {
       Move_y(0);
       Serial.println("마지막 감지완료!");
@@ -1068,22 +1067,32 @@ void Servo_Grap()
       Stop_Move();
       break;
     }
-    if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 1)
-    {
+    if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+        getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1) {
       Back_Move();
     }
-    else
-    {
-      if (getLineSensorValue(Front_Left) == 0 && getLineSensorValue(Front_Right) == 1)
-      {
-        Back_Move(0, SPEED, SPEED + ((SPEED * 2) / 10), SPEED, SPEED + ((SPEED * 2) / 10));
+    else {
+      if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+          getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1) {
+
+        Back_Move(0,
+                  DEFAULT_MOTOR_SPEED,
+                  DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                  DEFAULT_MOTOR_SPEED,
+                  DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10));
       }
-      else if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 0)
-      {
-        Back_Move(0, SPEED + ((SPEED * 2) / 10), SPEED, SPEED + ((SPEED * 2) / 10), SPEED);
+      else if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+              getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 0) {
+
+        Back_Move(0,
+                  DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                  DEFAULT_MOTOR_SPEED,
+                  DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                  DEFAULT_MOTOR_SPEED);
       }
     }
-    if (getLineSensorValue(Center_Left) == 1 || getLineSensorValue(Center_Right) == 1)
+    if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1 ||
+        getLineSensorValue(CENTER_RIGHT_LINE_SENSOR_PIN) == 1)
     {
       Stop_Move();
       break;
@@ -1104,19 +1113,29 @@ void Servo_Put()
       Stop_Move();
       break;
     }
-    if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 1)
+    if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+        getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
     {
       forwardMove();
     }
     else
     {
-      if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 0)
-      {
-        forwardMove(0, SPEED, SPEED + ((SPEED * 2) / 10), SPEED, SPEED + ((SPEED * 2) / 10));
+      if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+          getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 0) {
+        forwardMove(0,
+                    DEFAULT_MOTOR_SPEED,
+                    DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                    DEFAULT_MOTOR_SPEED,
+                    DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10));
       }
-      else if (getLineSensorValue(Front_Left) == 0 && getLineSensorValue(Front_Right) == 1)
+      else if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+              getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
       {
-        forwardMove(0, SPEED + ((SPEED * 2) / 10), SPEED, SPEED + ((SPEED * 2) / 10), SPEED);
+        forwardMove(0,
+                    DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                    DEFAULT_MOTOR_SPEED,
+                    DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                    DEFAULT_MOTOR_SPEED);
       }
     }
   }
@@ -1135,55 +1154,67 @@ void Servo_Put()
       Stop_Move();
       break;
     }
-    if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 1)
-    {
+    if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+        getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1) {
       Back_Move();
     }
-    else
-    {
-      if (getLineSensorValue(Front_Left) == 0 && getLineSensorValue(Front_Right) == 1)
-      {
-        Back_Move(0, SPEED, SPEED + ((SPEED * 2) / 10), SPEED, SPEED + ((SPEED * 2) / 10));
+    else {
+      if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+          getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1) {
+
+        Back_Move(0,
+                  DEFAULT_MOTOR_SPEED,
+                  DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                  DEFAULT_MOTOR_SPEED,
+                  DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10));
       }
-      else if (getLineSensorValue(Front_Left) == 1 && getLineSensorValue(Front_Right) == 0)
-      {
-        Back_Move(0, SPEED + ((SPEED * 2) / 10), SPEED, SPEED + ((SPEED * 2) / 10), SPEED);
+      else if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+              getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 0) {
+
+        Back_Move(0,
+                  DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                  DEFAULT_MOTOR_SPEED,
+                  DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
+                  DEFAULT_MOTOR_SPEED);
       }
     }
-    if (getLineSensorValue(Center_Left) == 1 || getLineSensorValue(Center_Right) == 1)
-    {
+    if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1 ||
+        getLineSensorValue(CENTER_RIGHT_LINE_SENSOR_PIN) == 1) {
       Stop_Move();
       break;
     }
   }
 }
 
-void Turn_Right(int delay_time = 0, int angle = 0)
-{
-  exc.setMotorSpeeds(1, -SPEED * 2, -SPEED * 2);
-  exc.setMotorSpeeds(2, -SPEED * 2, -SPEED * 2);
+void turnRight(int setDelayTime = 0, int setAngle = 0) {
+  exc.setMotorSpeeds(1,
+                    -DEFAULT_MOTOR_SPEED * 2,
+                    -DEFAULT_MOTOR_SPEED * 2);
+
+  exc.setMotorSpeeds(2,
+                    -DEFAULT_MOTOR_SPEED * 2,
+                    -DEFAULT_MOTOR_SPEED * 2);
+
   delay(500);
-  if (delay_time > 0)
-  {
-    delay(delay_time);
+  if (setDelayTime > 0) {
+    delay(setDelayTime);
     exc.setMotorSpeeds(1, 0, 0);
     exc.setMotorSpeeds(2, 0, 0);
   }
-  if (angle != 0 && delay_time == 0)
-  {
+  if (setAngle != 0 && setDelayTime == 0) {
     int turn_controll = 0;
     int current_turn = 0;
-    switch (angle / 90)
-    {
+    switch (setAngle / 90) {
     case 1:
       start = millis();
-      while (1)
-      {
+      while (1) {
         end = millis();
-        if (getLineSensorValue(Front_Left) == 0 && turn_controll == 0)
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+            turn_controll == 0) {
           turn_controll = 1;
-        if (getLineSensorValue(Front_Left) == 1 && turn_controll == 1)
-        {
+        }
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+            turn_controll == 1) {
           Stop_Move();
           break;
         }
@@ -1192,25 +1223,22 @@ void Turn_Right(int delay_time = 0, int angle = 0)
 
     case 2:
       start = millis();
-      while (1)
-      {
+      while (1) {
         end = millis();
-        if (getLineSensorValue(Front_Left) == 0 && turn_controll == 0)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+            turn_controll == 0) {
           turn_controll = 1;
         }
-        if (getLineSensorValue(Front_Left) == 1 && turn_controll == 1)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+            turn_controll == 1) {
           turn_controll = 0;
           current_turn += 1;
         }
-        if (current_turn == 2)
-        {
+        if (current_turn == 2) {
           Stop_Move();
           break;
         }
-        if (end - start > 20000)
-        {
+        if (end - start > 20000) {
           Stop_Move();
           break;
         }
@@ -1219,25 +1247,23 @@ void Turn_Right(int delay_time = 0, int angle = 0)
 
     case 3:
       start = millis();
-      while (1)
-      {
+      while (1) {
         end = millis();
-        if (getLineSensorValue(Front_Left) == 0 && turn_controll == 0)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+            turn_controll == 0) {
           turn_controll = 1;
         }
-        if (getLineSensorValue(Front_Left) == 1 && turn_controll == 1)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+            turn_controll == 1) {
+          
           turn_controll = 0;
           current_turn += 1;
         }
-        if (current_turn == 3)
-        {
+        if (current_turn == 3) {
           Stop_Move();
           break;
         }
-        if (end - start > 20000)
-        {
+        if (end - start > 20000) {
           Stop_Move();
           break;
         }
@@ -1251,32 +1277,36 @@ void Turn_Right(int delay_time = 0, int angle = 0)
   }
 }
 
-void Turn_Left(int delay_time = 0, int angle = 0)
-{
-  exc.setMotorSpeeds(1, SPEED * 2, SPEED * 2);
-  exc.setMotorSpeeds(2, SPEED * 2, SPEED * 2);
+void turnLeft(int setDelayTime = 0, int setAngle = 0) {
+  exc.setMotorSpeeds(1,
+                    DEFAULT_MOTOR_SPEED * 2,
+                    DEFAULT_MOTOR_SPEED * 2);
+  exc.setMotorSpeeds(2,
+                    DEFAULT_MOTOR_SPEED * 2,
+                    DEFAULT_MOTOR_SPEED * 2);
   delay(500);
-  if (delay_time > 0)
-  {
-    delay(delay_time);
+  if (setDelayTime > 0) {
+    delay(setDelayTime);
     exc.setMotorSpeeds(1, 0, 0);
     exc.setMotorSpeeds(2, 0, 0);
   }
-  if (angle != 0 && delay_time == 0)
-  {
+  if (setAngle != 0 && setDelayTime == 0) {
     int turn_controll = 0;
     int current_turn = 0;
-    switch (angle / 90)
-    {
+    switch (setAngle / 90) {
     case 1:
       start = millis();
-      while (1)
-      {
+      while (1) {
         end = millis();
-        if (getLineSensorValue(Front_Left) == 0 && turn_controll == 0)
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+            turn_controll == 0) {
+
           turn_controll = 1;
-        if (getLineSensorValue(Front_Left) == 1 && turn_controll == 1)
-        {
+        }
+
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+            turn_controll == 1) {
+
           Stop_Move();
           break;
         }
@@ -1285,25 +1315,24 @@ void Turn_Left(int delay_time = 0, int angle = 0)
 
     case 2:
       start = millis();
-      while (1)
-      {
+      while (1) {
         end = millis();
-        if (getLineSensorValue(Front_Left) == 0 && turn_controll == 0)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+            turn_controll == 0) {
+
           turn_controll = 1;
         }
-        if (getLineSensorValue(Front_Left) == 1 && turn_controll == 1)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+            turn_controll == 1) {
+
           turn_controll = 0;
           current_turn += 1;
         }
-        if (current_turn == 2)
-        {
+        if (current_turn == 2) {
           Stop_Move();
           break;
         }
-        if (end - start > 20000)
-        {
+        if (end - start > 20000) {
           Stop_Move();
           break;
         }
@@ -1312,25 +1341,22 @@ void Turn_Left(int delay_time = 0, int angle = 0)
 
     case 3:
       start = millis();
-      while (1)
-      {
+      while (1) {
         end = millis();
-        if (getLineSensorValue(Front_Left) == 0 && turn_controll == 0)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 0 &&
+            turn_controll == 0) {
           turn_controll = 1;
         }
-        if (getLineSensorValue(Front_Left) == 1 && turn_controll == 1)
-        {
+        if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
+            turn_controll == 1) {
           turn_controll = 0;
           current_turn += 1;
         }
-        if (current_turn == 3)
-        {
+        if (current_turn == 3) {
           Stop_Move();
           break;
         }
-        if (end - start > 20000)
-        {
+        if (end - start > 20000) {
           Stop_Move();
           break;
         }
@@ -1352,12 +1378,12 @@ int getLineSensorValue(int pin_num)
 void showLineSensorStatus()
 {
   Serial.print("앞에 왼쪽(2번핀) : ");
-  Serial.print(getLineSensorValue(Front_Left));
+  Serial.print(getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN));
   Serial.print("\t앞에 오른쪽(3번핀) : ");
-  Serial.print(getLineSensorValue(Front_Right));
+  Serial.print(getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN));
   Serial.print("\t가운데 왼쪽(4번핀) : ");
-  Serial.print(getLineSensorValue(Center_Left));
+  Serial.print(getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN));
   Serial.print("\t가운데 오른쪽(5번핀) : ");
-  Serial.print(getLineSensorValue(Center_Right));
+  Serial.print(getLineSensorValue(CENTER_RIGHT_LINE_SENSOR_PIN));
   Serial.println();
 }
