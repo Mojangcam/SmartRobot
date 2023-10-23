@@ -1,0 +1,4 @@
+{
+    "sketch": "SmartRobot.ino",
+    "board": "arduino:avr:uno"
+}
