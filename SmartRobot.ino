@@ -8,6 +8,7 @@
 #define CENTER_LEFT_LINE_SENSOR_PIN   4
 #define CENTER_RIGHT_LINE_SENSOR_PIN  5
 #define DEFAULT_MOTOR_SPEED           75
+#define YELLOW_PILLAR_COLOR_ID        4
 
 PRIZM prizm;
 EXPANSION exc;
@@ -224,7 +225,7 @@ void loop()
   {
     resetPosition();
     if (Y == 0){
-      gotoColorPillar(4);
+      gotoColorPillar(YELLOW_PILLAR_COLOR_ID);
       blockDrop();
       beforeColorID = nearbyBlockColorID;
       Y = 1;
@@ -235,7 +236,7 @@ void loop()
   sequenceBlockOrganize(beforeColorID, 1);
   sequenceBlockOrganize(beforeColorID, 0);
   sequenceBlockOrganize(nearbyPillarColorID, 1);
-  sequenceBlockOrganize(4, 1);
+  sequenceBlockOrganize(YELLOW_PILLAR_COLOR_ID, 1);
   sequenceBlockOrganize(nearbyBlockColorID, 0);
   gotoPositionY(1);
   forwardMove(4000);
