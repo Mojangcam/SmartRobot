@@ -47,18 +47,23 @@ int g_nearbyBlockPositionY = 0;
 
 int rec = 0;
 int rec2 = 0;
+
 // Robot spin counter
 int g_robotSpinCounter = 0;
 
 // Huskylens
 void huskylensStarting();
 void huskylensPrintID(HUSKYLENSResult result);
+void allBlockScan();
 
 void colorRecognition(int currentPositionX, int curruntPositionY);
 
 unsigned long g_asyncStartTimeMsec, g_asyncEndTimeMsec;
 int g_directionToLook;
+
+// Robot Move Control Functions
 void servoMove();
+void gotoPositionX(int setPositionX);
 void gotoPositionY(int setPositionY);
 void blockPickup();
 void blockDrop();
@@ -92,21 +97,18 @@ void turnRight(int setDelayTime = 0, int setAngle = 0);
 void turnLeft(int setDelayTime = 0, int setAngle = 0);
 void gotoColorBlock(int colorBlockID = 0);
 void gotoColorPillar(int colorPillarID = 0);
-void moveX(int setPositionX);
-void moveY(int setPositionY);
 int getLineSensorValue(int lineSensorPinNum);
 void showLineSensorStatus();
-void getNearbyBlock(int blockID = 0);
-void allBlockScan();
 void resetPosition();
+// End Robot Control Functions
 
 // Get Block Position
-void getPositionXToBlockID(int BlockID);
-void getPositionYToBlockID(int BlockID);
+void getPositionXToBlockID(int colorID);
+void getPositionYToBlockID(int colorID);
 
 // Get Pillar Position
-void getPositionXToPillarID(int BlockID);
-void getPositionYToPillarID(int BlockID);
+void getPositionXToPillarID(int colorID);
+void getPositionYToPillarID(int colorID);
 
 // NEW kj
 int g_beforePillarX;
@@ -121,15 +123,13 @@ int g_lastBlockY = 0;
 int First_ch = 0;
 int target_color = 0;
 int RGB_cyl = 0;
-int start_speed = 50;
+int startSpeed = 50;
 
 int go_position_x, go_position_y;
-int color = 0;
-int color1 = 0;
+int nearbyBlockColorID = 0;         // this variable is nearby block color ID [ 1 = Red, 2 = Green, 3 = Blue, 4 = Yellow]
+int nearbyPillarColorID = 0;        // this variable is nearby pillar color ID  [ 1 = Red, 2 = Green, 3 = Blue, 4 = Yellow ]
+int beforeColorID = 0;
 int Y = 0;
-int before_color = 0;
-int Y_Color = 0;
-int alt_color = 0;
 
 void pickup_block(int setDelayTime = 0) {
   prizm.setMotorPower(2, -15);
@@ -165,58 +165,58 @@ void loop()
         g_blueBlockPositionY == i){
       go_position_y = i;
       if (g_redBlockPositionY == i){
-        color = 1;
+        nearbyBlockColorID = 1;
       } // 가장 가까운 값이 빨간색이면 
       else if (g_greenBlockPositionY == i){
-        color = 2;
+        nearbyBlockColorID = 2;
       }
       else if (g_blueBlockPositionY == i){
-        color = 3;
+        nearbyBlockColorID = 3;
       }
-      if (color != 0){
+      if (nearbyBlockColorID != 0){
         break;
       }
     }
   }
-  if (color == 1){
+  if (nearbyBlockColorID == 1){
     if (g_redBlockPositionY == g_greenPillarPositionY &&
         g_redBlockPositionX == g_greenPillarPositionX){
-      color1 = 2;
+      nearbyPillarColorID = 2;
     }
     else if (g_redBlockPositionY == g_bluePillarPositionY &&
             g_redBlockPositionX == g_bluePillarPositionX){
-      color1 = 3;
+      nearbyPillarColorID = 3;
     }
   }
-  else if (color == 2){
+  else if (nearbyBlockColorID == 2){
     if (g_greenBlockPositionY == g_redPillarPositionY &&
         g_greenBlockPositionX == g_redPillarPositionX){
-      color1 = 1;
+      nearbyPillarColorID = 1;
     }
     else if (g_greenBlockPositionY == g_bluePillarPositionY &&
             g_greenBlockPositionX == g_bluePillarPositionX){
-      color1 = 3;
+      nearbyPillarColorID = 3;
     }
   }
-  else if (color == 3){
+  else if (nearbyBlockColorID == 3){
     if (g_blueBlockPositionY == g_redPillarPositionY &&
         g_blueBlockPositionX == g_redPillarPositionX){
-      color1 = 1;
+      nearbyPillarColorID = 1;
     }
     else if (g_blueBlockPositionY == g_greenPillarPositionY &&
             g_blueBlockPositionX == g_greenPillarPositionX){
-      color1 = 2;
+      nearbyPillarColorID = 2;
     }
   }
-  Serial.print(color1);
-  gotoColorBlock(color); // 레드로 가
-  Servo_Grap();            // 찝어
-  if (find_y_b(color1) == g_yellowPillarPositionY &&
+  Serial.print(nearbyPillarColorID);
+  gotoColorBlock(nearbyBlockColorID); // 레드로 가
+  blockPickup();            // 찝어
+  if (getPositionYToPillarID(nearbyPillarColorID) == g_yellowPillarPositionY &&
       g_yellowPillarPositionY == g_currentPositionY){
     if (Y == 0){
       turnRight(0, 180);
-      Servo_Put();
-      Y_Color = color;
+      blockDrop();
+      beforeColorID = nearbyBlockColorID;
       Y = 1;
     }
   }
@@ -225,103 +225,104 @@ void loop()
     resetPosition();
     if (Y == 0){
       gotoColorPillar(4);
-      Servo_Put();
-      Y_Color = color;
+      blockDrop();
+      beforeColorID = nearbyBlockColorID;
       Y = 1;
       resetPosition();
     }
   }
-  gotoColorBlock(color1); // color1 = blue color = red Y_color = red
-  Servo_Grap();
-  resetPosition();
-  gotoColorBlock(Y_Color);
-  Servo_Put();
-  resetPosition();
-  gotoColorPillar(Y_Color);
-  Servo_Grap();
-  resetPosition();
-  gotoColorBlock(color1);
-  Servo_Put();
-  resetPosition();
-  gotoColorPillar(4);
-  Servo_Grap();
-  resetPosition();
-  gotoColorPillar(color);
-  Servo_Put();
-  resetPosition();
-  Move_y(1);
+  sequenceBlockOrganize(nearbyPillarColorID, 1); // color1 = blue color = red beforeColorID = red
+  sequenceBlockOrganize(beforeColorID, 1);
+  sequenceBlockOrganize(beforeColorID, 0);
+  sequenceBlockOrganize(nearbyPillarColorID, 1);
+  sequenceBlockOrganize(4, 1);
+  sequenceBlockOrganize(nearbyBlockColorID, 0);
+  gotoPositionY(1);
   forwardMove(4000);
   Right_Move(2000);
   Stop_Move();
 }
 
-int getPositionXToBlockID(int color)
+void sequenceBlockOrganize(int moveToColorID, int is_Block) {
+  if (is_Block) {
+    gotoColorBlock(moveToColorID);
+    blockPickup();
+    resetPosition();
+  }
+  else if(!is_Block) {
+    gotoColorPillar(moveToColorID);
+    blockPickup();
+    resetPosition();
+  }
+}
+
+int getPositionXToBlockID(int colorID)
 {
-  if (color == 1)
+  if (colorID == 1)
   {
     return g_redBlockPositionX;
   }
-  else if (color == 2)
+  else if (colorID == 2)
   {
     return g_greenBlockPositionX;
   }
-  else if (color == 3)
+  else if (colorID == 3)
   {
     return g_blueBlockPositionX;
   }
 }
 
-int getPositionYToBlockID(int color)
+int getPositionYToBlockID(int colorID)
 {
-  if (color == 1)
+  if (colorID == 1)
   {
     return g_redBlockPositionY;
   }
-  else if (color == 2)
+  else if (colorID == 2)
   {
     return g_greenBlockPositionY;
   }
-  else if (color == 3)
+  else if (colorID == 3)
   {
     return g_blueBlockPositionY;
   }
 }
 
-int getPositionXToPillarID(int color)
+int getPositionXToPillarID(int colorID)
 {
-  if (color == 1)
+  if (colorID == 1)
   {
     return g_redPillarPositionX;
   }
-  else if (color == 2)
+  else if (colorID == 2)
   {
     return g_greenPillarPositionX;
   }
-  else if (color == 3)
+  else if (colorID == 3)
   {
     return g_bluePillarPositionX;
   }
-  else if (color == 4)
+  else if (colorID == 4)
   {
     return g_yellowPillarPositionX;
   }
 }
 
-int getPositionYToPillarID(int color)
+int getPositionYToPillarID(int colorID)
 {
-  if (color == 1)
+  if (colorID == 1)
   {
     return g_redPillarPositionY;
   }
-  else if (color == 2)
+  else if (colorID == 2)
   {
     return g_greenPillarPositionY;
   }
-  else if (color == 3)
+  else if (colorID == 3)
   {
     return g_bluePillarPositionY;
   }
-  else if (color == 4)
+  else if (colorID == 4)
   {
     return g_yellowPillarPositionY;
   }
@@ -367,11 +368,11 @@ void resetPosition()
   }
 }
 
-void moveX(int x)
+void gotoPositionX(int setPositionX)
 {
-  if (x >= 0 && x < 3)
+  if (setPositionX >= 0 && setPositionX < 3)
   {
-    if (x == 0)
+    if (setPositionX == 0)
     {
       if (g_directionToLook == 0)
       {
@@ -385,7 +386,7 @@ void moveX(int x)
       }
       g_currentPositionX = 0;
     }
-    else if (x == 2)
+    else if (setPositionX == 2)
     {
       if (g_directionToLook == 1)
       {
@@ -409,16 +410,16 @@ void gotoColorBlock(int colorID = 0)
     switch (colorID)
     {
     case 1:
-      Move_y(g_redBlockPositionY);
-      Move_x(g_redBlockPositionX); // 바라보기 까지만 함
+      gotoPositionY(g_redBlockPositionY);
+      gotoPositionX(g_redBlockPositionX); // 바라보기 까지만 함
       break;
     case 2:
-      Move_y(g_greenBlockPositionY);
-      Move_x(g_greenBlockPositionX);
+      gotoPositionY(g_greenBlockPositionY);
+      gotoPositionX(g_greenBlockPositionX);
       break;
     case 3:
-      Move_y(g_blueBlockPositionY);
-      Move_x(g_blueBlockPositionX);
+      gotoPositionY(g_blueBlockPositionY);
+      gotoPositionX(g_blueBlockPositionX);
       break;
     }
   }
@@ -431,21 +432,21 @@ void gotoColorPillar(int colorID = 0)
     switch (colorID)
     {
     case 1:
-      Move_y(g_redPillarPositionY);
-      Move_x(g_redPillarPositionX); // 바라보기 까지만 함
+      gotoPositionY(g_redPillarPositionY);
+      gotoPositionX(g_redPillarPositionX); // 바라보기 까지만 함
       break;
     case 2:
-      Move_y(g_greenPillarPositionY);
-      Move_x(g_greenPillarPositionX);
+      gotoPositionY(g_greenPillarPositionY);
+      gotoPositionX(g_greenPillarPositionX);
       break;
     case 3:
-      Move_y(g_bluePillarPositionY);
-      Move_x(g_bluePillarPositionX);
+      gotoPositionY(g_bluePillarPositionY);
+      gotoPositionX(g_bluePillarPositionX);
       break;
 
     case 4:
-      Move_y(g_yellowPillarPositionY);
-      Move_x(g_yellowPillarPositionX);
+      gotoPositionY(g_yellowPillarPositionY);
+      gotoPositionX(g_yellowPillarPositionX);
       break;
     }
   }
@@ -455,7 +456,7 @@ void allBlockScan()
 {
   unsigned long scan_start, scan_end;
   Serial.println("Move 2");
-  Move_y(2);
+  gotoPositionY(2);
   delay(500);
   scan_start = millis();
   while (1)
@@ -468,7 +469,7 @@ void allBlockScan()
     getcol(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 3");
-  Move_y(3);
+  gotoPositionY(3);
   delay(500);
   scan_start = millis();
   while (1)
@@ -481,7 +482,7 @@ void allBlockScan()
     colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 4");
-  Move_y(4);
+  gotoPositionY(4);
   delay(500);
   scan_start = millis();
   while (1)
@@ -494,7 +495,7 @@ void allBlockScan()
     colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 5");
-  Move_y(5);
+  gotoPositionY(5);
   delay(500);
   scan_start = millis();
   while (1)
@@ -521,7 +522,7 @@ void allBlockScan()
     colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 4");
-  Move_y(4);
+  gotoPositionY(4);
   delay(500);
   scan_start = millis();
   while (1)
@@ -534,7 +535,7 @@ void allBlockScan()
     colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 3");
-  Move_y(3);
+  gotoPositionY(3);
   delay(500);
   scan_start = millis();
   while (1)
@@ -547,7 +548,7 @@ void allBlockScan()
     colorRecognition(g_currentPositionX, g_currentPositionY);
   }
   Serial.println("Move 2");
-  Move_y(2);
+  gotoPositionY(2);
   delay(500);
   scan_start = millis();
   while (1)
@@ -584,7 +585,7 @@ void rightMove(int delay_time = 0,
   }
 }
 
-void Back_Move(int delay_time = 0,
+void backMove(int delay_time = 0,
                 int leftTopMotorSpeed = DEFAULT_MOTOR_SPEED,
                 int rightTopMotorSpeed = DEFAULT_MOTOR_SPEED,
                 int leftBottomMotorSpeed = DEFAULT_MOTOR_SPEED,
@@ -598,7 +599,7 @@ void Back_Move(int delay_time = 0,
   }
 }
 
-void Left_Move(int delay_time = 0,
+void leftMove(int delay_time = 0,
                 int leftTopMotorSpeed = DEFAULT_MOTOR_SPEED,
                 int rightTopMotorSpeed = DEFAULT_MOTOR_SPEED,
                 int leftBottomMotorSpeed = DEFAULT_MOTOR_SPEED,
@@ -633,7 +634,7 @@ void stopMove()
   exc.setMotorSpeeds(2, 0, 0);
 }
 
-void moveY(int setPositionY) {
+void gotoPositionY(int setPositionY) {
   Serial.println(setPositionY);
   Serial.println(g_currentPositionY);
   if (setPositionY != 0)
@@ -898,12 +899,12 @@ void colorRecognition(int x, int y)
   }
 }
 
-void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
+void startMove(int startSpeed = DEFAULT_MOTOR_SPEED)
 {
   int dongjak = 1;
   Serial.println("Start");
   int position_reset = 0;
-  forwardMove(0, start_speed, start_speed, start_speed, start_speed);
+  forwardMove(0, startSpeed, startSpeed, startSpeed, startSpeed);
   start = millis();
   while (dongjak)
   {
@@ -912,7 +913,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
     if (end - start > 3000)
     {
       Stop_Move();
-      Back_Move(3000, start_speed, start_speed, start_speed, start_speed);
+      Back_Move(3000, startSpeed, startSpeed, startSpeed, startSpeed);
       Serial.println("3S Over");
       break;
     }
@@ -920,7 +921,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
     {
       Serial.println("인식 완료 ");
       Stop_Move();
-      Left_Move(0, start_speed, start_speed, start_speed, start_speed);
+      Left_Move(0, startSpeed, startSpeed, startSpeed, startSpeed);
       unsigned long ls, le;
       ls = millis();
       while (1)
@@ -930,7 +931,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
         {
           Serial.println("15초 지남");
           Stop_Move();
-          Right_Move(15000, start_speed, start_speed, start_speed, start_speed);
+          Right_Move(15000, startSpeed, startSpeed, startSpeed, startSpeed);
 
           break;
         }
@@ -957,7 +958,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
     {
       unsigned length_s, length_e;
       Serial.println("왼쪽 이동");
-      Left_Move(0, start_speed, start_speed, start_speed, start_speed);
+      Left_Move(0, startSpeed, startSpeed, startSpeed, startSpeed);
       length_s = millis();
       while (1)
       {
@@ -966,7 +967,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
         {
           Serial.println("8초 지남");
           Stop_Move();
-          Right_Move(8000, start_speed, start_speed, start_speed, start_speed);
+          Right_Move(8000, startSpeed, startSpeed, startSpeed, startSpeed);
           break;
         }
         if (length_e - length_s > 2000)
@@ -977,10 +978,10 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
             length_e = millis();
             int cm_length = (length_e - length_s) / 42;
             int center_length = (length_e - length_s) / 2;
-            Right_Move(cm_length * 7, start_speed, start_speed, start_speed, start_speed);
+            Right_Move(cm_length * 7, startSpeed, startSpeed, startSpeed, startSpeed);
             Serial.println("오른쪽으로");
             Serial.println(cm_length * 9);
-            // Left_Move(cm_length * 16, start_speed, start_speed, start_speed, start_speed);
+            // Left_Move(cm_length * 16, startSpeed, startSpeed, startSpeed, startSpeed);
             // Serial.println("왼쪽으로");
             // Serial.println(cm_length * 19);
             dongjak = 0;
@@ -1008,7 +1009,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
     if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
         getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
     {
-      Move_y(0);
+      gotoPositionY(0);
       Serial.println("마지막 감지완료!");
       Stop_Move();
       break;
@@ -1017,7 +1018,7 @@ void startMove(int start_speed = DEFAULT_MOTOR_SPEED)
   Serial.println("Start 끝!");
 }
 
-void Servo_Grap()
+void blockPickup()
 {
   unsigned long start_time, end_time;
   start_time = millis();
@@ -1100,7 +1101,7 @@ void Servo_Grap()
   }
 }
 
-void Servo_Put()
+void blockDrop()
 { // wait for 3 seconds to give servo1 time                            // to get to position 180
   unsigned long start_time, end_time;
   start_time = millis();
@@ -1370,9 +1371,9 @@ void turnLeft(int setDelayTime = 0, int setAngle = 0) {
   }
 }
 
-int getLineSensorValue(int pin_num)
+int getLineSensorValue(int digitalPinNumber)
 {
-  return getLineSensorValue(pin_num);
+  return prizm.readLineSensor(digitalPinNumber);
 }
 
 void showLineSensorStatus()
