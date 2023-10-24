@@ -383,10 +383,12 @@ void resetPosition()
                 g_directionToLook == 0)
         {
             turnRight(0, 90);
-            if (g_directionToLook == 1){
+            if (g_directionToLook == 1)
+            {
                 g_directionToLook = 0;
             }
-            else if (g_directionToLook == 0){
+            else if (g_directionToLook == 0)
+            {
                 g_directionToLook = 1;
             }
         }
@@ -675,10 +677,12 @@ void gotoPositionY(int setPositionY)
     Serial.println(g_currentPositionY);
     if (setPositionY != 0)
     {
-        if (setPositionY > 5){
+        if (setPositionY > 5)
+        {
             setPositionY = 5;
         }
-        if (setPositionY == 0){
+        if (setPositionY == 0)
+        {
             setPositionY = 1;
         }
         while (g_currentPositionY != setPositionY)
@@ -886,13 +890,16 @@ void huskylensPrintID(HUSKYLENSResult result)
 
 void colorRecognition(int x, int y)
 {
-    if (!huskylens.request()){
+    if (!huskylens.request())
+    {
         Serial.println(F("Fail to request data from HUSKYLENS, recheck the connection!"));
     }
-    else if (!huskylens.isLearned()){
+    else if (!huskylens.isLearned())
+    {
         Serial.println(F("Nothing learned, press learn button on HUSKYLENS to learn one!"));
     }
-    else if (!huskylens.available()){
+    else if (!huskylens.available())
+    {
         Serial.println(F("No block or arrow appears on the screen!"));
     }
     else
