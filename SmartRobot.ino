@@ -258,8 +258,8 @@ void loop()
     sequenceBlockOrganize(nearbyBlockColorID, 0);
     gotoPositionY(1);
     forwardMove(4000);
-    Right_Move(2000);
-    Stop_Move();
+    rightMove(2000);
+    stopMove();
 }
 
 void sequenceBlockOrganize(int moveToColorID, int is_Block)
@@ -701,7 +701,7 @@ void gotoPositionY(int setPositionY)
                         end_time = millis();
                         if (end_time - start_time > 500)
                         {
-                            Stop_Move();
+                            stopMove();
                             break;
                         }
                         else if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1)
@@ -749,7 +749,7 @@ void gotoPositionY(int setPositionY)
                     rec = 1;
                     if (g_currentPositionY == setPositionY)
                     {
-                        Stop_Move();
+                        stopMove();
                         break;
                     }
                 }
@@ -774,7 +774,7 @@ void gotoPositionY(int setPositionY)
                         end_time = millis();
                         if (end_time - start_time > 500)
                         {
-                            Stop_Move();
+                            stopMove();
                             break;
                         }
                         else if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1)
@@ -822,7 +822,7 @@ void gotoPositionY(int setPositionY)
                     rec = 1;
                     if (g_currentPositionY == setPositionY)
                     {
-                        Stop_Move();
+                        stopMove();
                         break;
                     }
                 }
@@ -979,16 +979,16 @@ void startMove(int startSpeed = DEFAULT_MOTOR_SPEED)
         end = millis();
         if (end - start > 3000)
         {
-            Stop_Move();
-            Back_Move(3000, startSpeed, startSpeed, startSpeed, startSpeed);
+            stopMove();
+            backMove(3000, startSpeed, startSpeed, startSpeed, startSpeed);
             Serial.println("3S Over");
             break;
         }
         if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1)
         {
             Serial.println("인식 완료 ");
-            Stop_Move();
-            Left_Move(0, startSpeed, startSpeed, startSpeed, startSpeed);
+            stopMove();
+            leftMove(0, startSpeed, startSpeed, startSpeed, startSpeed);
             unsigned long ls, le;
             ls = millis();
             while (1)
@@ -997,8 +997,8 @@ void startMove(int startSpeed = DEFAULT_MOTOR_SPEED)
                 if (le - ls > 15000)
                 {
                     Serial.println("15초 지남");
-                    Stop_Move();
-                    Right_Move(15000, startSpeed, startSpeed, startSpeed, startSpeed);
+                    stopMove();
+                    rightMove(15000, startSpeed, startSpeed, startSpeed, startSpeed);
 
                     break;
                 }
@@ -1025,7 +1025,7 @@ void startMove(int startSpeed = DEFAULT_MOTOR_SPEED)
         {
             unsigned length_s, length_e;
             Serial.println("왼쪽 이동");
-            Left_Move(0, startSpeed, startSpeed, startSpeed, startSpeed);
+            leftMove(0, startSpeed, startSpeed, startSpeed, startSpeed);
             length_s = millis();
             while (1)
             {
@@ -1033,8 +1033,8 @@ void startMove(int startSpeed = DEFAULT_MOTOR_SPEED)
                 if (length_e - length_s > 8000)
                 {
                     Serial.println("8초 지남");
-                    Stop_Move();
-                    Right_Move(8000, startSpeed, startSpeed, startSpeed, startSpeed);
+                    stopMove();
+                    rightMove(8000, startSpeed, startSpeed, startSpeed, startSpeed);
                     break;
                 }
                 if (length_e - length_s > 2000)
@@ -1045,7 +1045,7 @@ void startMove(int startSpeed = DEFAULT_MOTOR_SPEED)
                         length_e = millis();
                         int cm_length = (length_e - length_s) / 42;
                         int center_length = (length_e - length_s) / 2;
-                        Right_Move(cm_length * 7, startSpeed, startSpeed, startSpeed, startSpeed);
+                        rightMove(cm_length * 7, startSpeed, startSpeed, startSpeed, startSpeed);
                         Serial.println("오른쪽으로");
                         Serial.println(cm_length * 9);
                         // Left_Move(cm_length * 16, startSpeed, startSpeed, startSpeed, startSpeed);
@@ -1070,7 +1070,7 @@ void startMove(int startSpeed = DEFAULT_MOTOR_SPEED)
         if (end - start > 10000)
         {
             Serial.println("10초 오버");
-            Stop_Move();
+            stopMove();
             break;
         }
         if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
@@ -1078,7 +1078,7 @@ void startMove(int startSpeed = DEFAULT_MOTOR_SPEED)
         {
             gotoPositionY(0);
             Serial.println("마지막 감지완료!");
-            Stop_Move();
+            stopMove();
             break;
         }
     }
@@ -1095,7 +1095,7 @@ void blockPickup()
         end_time = millis();
         if (end_time - start_time > 1120)
         {
-            Stop_Move();
+            stopMove();
             break;
         }
         if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
@@ -1133,17 +1133,17 @@ void blockPickup()
     start_time = millis();
     while (1)
     {
-        Back_Move();
+        backMove();
         end_time = millis();
         if (end_time - start_time > 1000)
         {
-            Stop_Move();
+            stopMove();
             break;
         }
         if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
             getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
         {
-            Back_Move();
+            backMove();
         }
         else
         {
@@ -1151,7 +1151,7 @@ void blockPickup()
                 getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
             {
 
-                Back_Move(0,
+                backMove(0,
                           DEFAULT_MOTOR_SPEED,
                           DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
                           DEFAULT_MOTOR_SPEED,
@@ -1161,7 +1161,7 @@ void blockPickup()
                      getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 0)
             {
 
-                Back_Move(0,
+                backMove(0,
                           DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
                           DEFAULT_MOTOR_SPEED,
                           DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
@@ -1171,7 +1171,7 @@ void blockPickup()
         if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1 ||
             getLineSensorValue(CENTER_RIGHT_LINE_SENSOR_PIN) == 1)
         {
-            Stop_Move();
+            stopMove();
             break;
         }
     }
@@ -1187,7 +1187,7 @@ void blockDrop()
         end_time = millis();
         if (end_time - start_time > 1120)
         {
-            Stop_Move();
+            stopMove();
             break;
         }
         if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
@@ -1225,17 +1225,17 @@ void blockDrop()
     start_time = millis();
     while (1)
     {
-        Back_Move();
+        backMove();
         end_time = millis();
         if (end_time - start_time > 1000)
         {
-            Stop_Move();
+            stopMove();
             break;
         }
         if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
             getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
         {
-            Back_Move();
+            backMove();
         }
         else
         {
@@ -1243,7 +1243,7 @@ void blockDrop()
                 getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 1)
             {
 
-                Back_Move(0,
+                backMove(0,
                           DEFAULT_MOTOR_SPEED,
                           DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
                           DEFAULT_MOTOR_SPEED,
@@ -1253,7 +1253,7 @@ void blockDrop()
                      getLineSensorValue(FRONT_RIGHT_LINE_SENSOR_PIN) == 0)
             {
 
-                Back_Move(0,
+                backMove(0,
                           DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
                           DEFAULT_MOTOR_SPEED,
                           DEFAULT_MOTOR_SPEED + ((DEFAULT_MOTOR_SPEED * 2) / 10),
@@ -1263,7 +1263,7 @@ void blockDrop()
         if (getLineSensorValue(CENTER_LEFT_LINE_SENSOR_PIN) == 1 ||
             getLineSensorValue(CENTER_RIGHT_LINE_SENSOR_PIN) == 1)
         {
-            Stop_Move();
+            stopMove();
             break;
         }
     }
@@ -1305,7 +1305,7 @@ void turnRight(int setDelayTime = 0, int setAngle = 0)
                 if (getLineSensorValue(FRONT_LEFT_LINE_SENSOR_PIN) == 1 &&
                     turn_controll == 1)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
             }
@@ -1329,12 +1329,12 @@ void turnRight(int setDelayTime = 0, int setAngle = 0)
                 }
                 if (current_turn == 2)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
                 if (end - start > 20000)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
             }
@@ -1359,19 +1359,19 @@ void turnRight(int setDelayTime = 0, int setAngle = 0)
                 }
                 if (current_turn == 3)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
                 if (end - start > 20000)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
             }
             break;
 
         default:
-            Stop_Move();
+            stopMove();
             break;
         }
     }
@@ -1414,7 +1414,7 @@ void turnLeft(int setDelayTime = 0, int setAngle = 0)
                     turn_controll == 1)
                 {
 
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
             }
@@ -1440,12 +1440,12 @@ void turnLeft(int setDelayTime = 0, int setAngle = 0)
                 }
                 if (current_turn == 2)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
                 if (end - start > 20000)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
             }
@@ -1469,19 +1469,19 @@ void turnLeft(int setDelayTime = 0, int setAngle = 0)
                 }
                 if (current_turn == 3)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
                 if (end - start > 20000)
                 {
-                    Stop_Move();
+                    stopMove();
                     break;
                 }
             }
             break;
 
         default:
-            Stop_Move();
+            stopMove();
             break;
         }
     }
